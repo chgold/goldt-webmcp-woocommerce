@@ -73,6 +73,10 @@ function goldtwmcp_wc_check_dependencies() {
 	return true;
 }
 
+// Priority 5 — must run BEFORE goldt-webmcp-bridge's plugins_loaded hook
+// (priority 10), otherwise the bridge fires do_action('goldtwmcp_register_modules')
+// before our callback is registered and the WooCommerce module never loads.
+// Matches the pattern goldt-webmcp-bridge-pro uses (also priority 5).
 add_action(
 	'plugins_loaded',
 	function () {
@@ -81,7 +85,7 @@ add_action(
 		}
 		add_action( 'goldtwmcp_register_modules', 'goldtwmcp_wc_register_modules' );
 	},
-	20
+	5
 );
 
 /**
