@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class License_Client {
 
 	const API_URL       = 'https://goldnat.ai/api/licenses/public/validate';
-	const EXPECTED_SLUG = 'goldt-webmcp-woocommerce';
+	const EXPECTED_SLUG = 'woocommerce-ai-connect';
 	const KEY_OPTION    = 'goldtwmcp_wc_license_key';
 	const CACHE_OPTION  = 'goldtwmcp_wc_license_status';
 	const CACHE_TTL     = 86400;
