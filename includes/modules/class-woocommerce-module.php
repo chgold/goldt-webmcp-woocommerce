@@ -1776,7 +1776,16 @@ class WooCommerce_Module extends Module_Base {
 		$password = ! empty( $params['password'] ) ? (string) $params['password'] : \wp_generate_password( 16 );
 
 		$new_id = \wc_create_new_customer( $email, $username, $password );
-		if ( \is_wp_error( $new_id ) ) return $new_id;
+		if ( \is_wp_error( $new_id ) ) {
+			// WC returns WP_Error without data['status'], which the bridge
+			// translates to a generic 500. Duplicate email / existing account
+			// is a client validation failure — surface as 409 Conflict.
+			$code = $new_id->get_error_code();
+			$status = 500;
+			if ( strpos( $code, 'exists' ) !== false ) $status = 409;
+			elseif ( in_array( $code, array( 'registration-error-invalid-email', 'registration-error-invalid-username' ), true ) ) $status = 400;
+			return new \WP_Error( $code, $new_id->get_error_message(), array( 'status' => $status ) );
+		}
 
 		$customer = new \WC_Customer( $new_id );
 		if ( ! empty( $params['first_name'] ) ) $customer->set_first_name( \sanitize_text_field( $params['first_name'] ) );
@@ -2169,7 +2178,16 @@ class WooCommerce_Module extends Module_Base {
 		if ( isset( $params['slug'] ) )        $args['slug']        = \sanitize_title( $params['slug'] );
 		if ( isset( $params['description'] ) ) $args['description'] = \wp_kses_post( $params['description'] );
 		$result = \wp_insert_term( \sanitize_text_field( $params['name'] ), 'product_tag', $args );
-		if ( \is_wp_error( $result ) ) return $result;
+		if ( \is_wp_error( $result ) ) {
+			// wp_insert_term returns WP_Error without data['status'] for
+			// duplicate-tag errors. Map term_exists to 409 Conflict so the
+			// bridge doesn't emit a misleading 500.
+			$code = $result->get_error_code();
+			$status = ( $code === 'term_exists' ) ? 409 : 500;
+			$data = $result->get_error_data();
+			$existing_id = is_int( $data ) ? $data : null;
+			return new \WP_Error( $code, $result->get_error_message(), array( 'status' => $status, 'existing_term_id' => $existing_id ) );
+		}
 		return array( 'term_id' => (int) $result['term_id'], 'name' => $params['name'] );
 	}
 
