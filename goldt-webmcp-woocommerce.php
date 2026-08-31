@@ -3,7 +3,7 @@
  * Plugin Name: Goldnat for WooCommerce
  * Plugin URI: https://goldnat.ai/plugins/goldt-webmcp-woocommerce
  * Description: WooCommerce integration for Goldnat — exposes WooCommerce products, orders, and cart as AI tools via the Goldnat WebMCP Bridge.
- * Version: 1.3.3
+ * Version: 1.3.4
  * Author: chgold
  * Author URI: https://goldnat.ai/
  * License: Proprietary
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GOLDTWMCP_WC_VERSION', '1.3.3' );
+define( 'GOLDTWMCP_WC_VERSION', '1.3.4' );
 define( 'GOLDTWMCP_WC_PATH', plugin_dir_path( __FILE__ ) );
 define( 'GOLDTWMCP_WC_URL', plugin_dir_url( __FILE__ ) );
 
@@ -87,6 +87,19 @@ add_action(
 	},
 	20
 );
+
+// Register with Bridge core's Plugin Updater — wp-admin update notices.
+add_action( 'plugins_loaded', function () {
+	if ( class_exists( '\GoldtWebMCP\Core\Plugin_Updater' ) && defined( 'GOLDTWMCP_WC_VERSION' ) ) {
+		require_once GOLDTWMCP_WC_PATH . 'includes/class-license-client.php';
+		\GoldtWebMCP\Core\Plugin_Updater::register(
+			__FILE__,
+			'woocommerce-ai-connect',
+			GOLDTWMCP_WC_VERSION,
+			\GoldtWebMCP\WooCommerce\License_Client::get_key() ?: null
+		);
+	}
+}, 25 );
 
 // Register license page as a submenu under the Bridge menu so all Pro
 // plugins live in one place — matches bridge-pro pattern. Priority 20
