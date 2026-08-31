@@ -1065,15 +1065,24 @@ class WooCommerce_Module extends Module_Base {
 	 * @return array
 	 */
 	private function format_order( $order ) {
+		// Defensive: some code paths (unbounded wc_get_orders() without
+		// `type` filter, or a caller passing a refund_id) can hand us a
+		// WC_Order_Refund which lacks get_order_number(). Fall back to the
+		// numeric ID string so the caller still gets a usable payload
+		// instead of a fatal.
+		$order_number = method_exists( $order, 'get_order_number' )
+			? $order->get_order_number()
+			: (string) $order->get_id();
+		$date         = $order->get_date_created();
 		return array(
 			'id'             => $order->get_id(),
-			'order_number'   => $order->get_order_number(),
+			'order_number'   => $order_number,
 			'status'         => $order->get_status(),
 			'total'          => $order->get_total(),
 			'currency'       => $order->get_currency(),
-			'date_created'   => $order->get_date_created()->date( 'Y-m-d H:i:s' ),
-			'payment_method' => $order->get_payment_method_title(),
-			'items_count'    => $order->get_item_count(),
+			'date_created'   => $date ? $date->date( 'Y-m-d H:i:s' ) : null,
+			'payment_method' => method_exists( $order, 'get_payment_method_title' ) ? $order->get_payment_method_title() : null,
+			'items_count'    => method_exists( $order, 'get_item_count' ) ? $order->get_item_count() : 0,
 		);
 	}
 
@@ -1122,6 +1131,11 @@ class WooCommerce_Module extends Module_Base {
 	 */
 	public function execute_listOrders( $params ) {
 		$args = array(
+			// Explicit type: without it, wc_get_orders() may return refund objects
+			// alongside real orders, and format_order() blows up on
+			// WC_Order_Refund which lacks get_order_number(). Restrict to
+			// shop_order so both "listOrders" and "getOrders" behave the same.
+			'type'  => 'shop_order',
 			'limit' => isset( $params['limit'] ) ? min( 100, \absint( $params['limit'] ) ) : 20,
 		);
 		if ( ! empty( $params['status'] ) ) {
