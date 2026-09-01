@@ -35,7 +35,7 @@ class Plugin_Updater {
 	/**
 	 * Default metadata endpoint. Override with GOLDTWMCP_UPDATE_ENDPOINT const.
 	 */
-	const DEFAULT_ENDPOINT = 'https://pm.gold-t.co.il/api/update-metadata.php';
+	const DEFAULT_ENDPOINT = 'https://goldnat.ai/api/plugin-updates';
 
 	const CACHE_TTL = 12 * HOUR_IN_SECONDS;
 
